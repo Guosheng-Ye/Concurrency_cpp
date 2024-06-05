@@ -3,16 +3,8 @@
  * @Date: 2024-03-21 17:05:37
  * @LastEditTime: 2024-03-22 10:59:22
  * @LastEditors: Ye Guosheng
- * @Description:
+ * @Description: 线程管理
  */
-/***
- * @Author: Ye Guosheng
- * @Date: 2024-03-21 17:05:37
- * @LastEditTime: 2024-03-22 09:35:03
- * @LastEditors: Ye Guosheng
- * @Description:
- */
-
 #include <iostream>
 #include <thread>
 #include <chrono>
