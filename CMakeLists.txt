@@ -9,13 +9,8 @@ set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
-# 查找Qt6的Core、Gui、Widgets和SerialPort模块
-set(CMAKE_PREFIX_PATH "D:/Qt/6.2.4/mingw_64")
-find_package(Qt6 COMPONENTS Core Gui Widgets SerialPort REQUIRED PATHS "D:/Qt/6.2.4/mingw_64/lib/cmake/Qt6")
-
-# 包含Qt6的头文件搜索路径
-set(Qt6_INCLUDE_DIRS "D:/Qt/6.2.4/mingw_64/include/")
-include_directories(${Qt6_INCLUDE_DIRS})
+# 设置thirdlib中的spdlog库路径
+set(SPDLOG_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/thirdlib/spdlog/include)
 
 # 函数用于创建每个项目的可执行文件
 function(create_project_executable project_dir)
@@ -23,16 +18,20 @@ function(create_project_executable project_dir)
     get_filename_component(project_name ${project_dir} NAME)
     add_executable(${project_name} ${src_files})
     
+    # 添加spdlog的包含目录
+    target_include_directories(${project_name} PRIVATE ${SPDLOG_INCLUDE_DIR})
+    
 endfunction()
 
+include_directories(${CMAKE_CURRENT_LIST_DIR}/thirdlib)
 
 # 遍历子目录，为每个包含main.cpp文件的子目录创建一个可执行文件
 file(GLOB children RELATIVE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/*)
 foreach (child ${children})
     if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/${child})
         file(GLOB main_cpp_files ${CMAKE_SOURCE_DIR}/${child}/*.cpp)
-            if (main_cpp_files)
-                create_project_executable(${CMAKE_SOURCE_DIR}/${child})
-            endif ()
+        if (main_cpp_files)
+            create_project_executable(${CMAKE_SOURCE_DIR}/${child})
+        endif ()
     endif ()
 endforeach ()
