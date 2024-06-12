@@ -128,7 +128,6 @@ public:
         std::lock_guard<std::mutex> lock(_m_mtx_m);
         if (_m_st_data.empty())
             throw empetyStack();
-
         value = _m_st_data.top();
         _m_st_data.pop();
     }
@@ -173,8 +172,6 @@ private:
     SomeBigObject _m_SomBO;
     std::mutex _m_mtx_M;
 };
-
-
 
 int main()
 {

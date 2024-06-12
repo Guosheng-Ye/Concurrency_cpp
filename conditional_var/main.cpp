@@ -1,9 +1,16 @@
+/*** 
+ * @Author: Ye Guosheng
+ * @Date: 2024-04-19 15:04:35
+ * @LastEditTime: 2024-06-12 08:33:10
+ * @LastEditors: Ye Guosheng
+ * @Description: 
+ */
 /***
  * @Author: Ye Guosheng
  * @Date: 2024-04-19 15:04:35
- * @LastEditTime: 2024-05-06 16:33:03
+ * @LastEditTime: 2024-06-05 13:10:35
  * @LastEditors: Ye Guosheng
- * @Description:
+ * @Description: 条件变量
  */
 #include <iostream>
 #include <thread>
@@ -12,7 +19,7 @@
 #include <queue>
 #include <deque>
 #include <chrono>
-
+#include "spdlog/spdlog.h"
 class AA
 {
     std::mutex _m_mtx;
@@ -59,6 +66,7 @@ public:
 
 int main()
 {
+    spdlog::info("test");
     AA aa;
     std::thread o1(&AA::outcache, &aa);
     std::thread o2(&AA::outcache, &aa);

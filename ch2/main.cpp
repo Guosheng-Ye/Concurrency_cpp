@@ -79,11 +79,9 @@ void demo1()
 
 void demo2()
 {
-    std::thread t1(f1); // t1 -> f1
-
+    std::thread t1(f1);             // t1 -> f1
     std::thread t2 = std::move(t1); // t2 -> f1,t1->null
-
-    t1 = std::thread(f2); // t1 -> f2, t2->f1
+    t1 = std::thread(f2);           // t1 -> f2, t2->f1
 
     std::thread t3;     // null handle
     t3 = std::move(t2); // t3 -> f1, t2->null, t1->t2
@@ -119,41 +117,6 @@ void demo3()
     int some_local_state = 0;
     ScopedThread T{std::thread(func(some_local_state))};
     std::cout << "demo3 thread" << std::endl;
-}
-
-/// @brief
-/// @return
-void convert()
-{
-    uint16_t sum = 0;
-    int received_data[6] = {0xAA, 0xFF, 0x48, 0xFF, 0x62, 0x52}; // Example received data
-
-    // Extracting X and Y control values
-    int16_t x, y;
-
-    x = (received_data[1] << 8) | (received_data[2]);
-    y = (received_data[3] << 8) | (received_data[4]);
-
-    // Converting back to original values (dividing by 1000)
-    float original_x = static_cast<float>(x) / 1000.0;
-    float original_y = static_cast<float>(y) / 1000.0;
-
-    // Checking checksum
-    for (int i = 0; i < 5; ++i)
-    {
-        sum += received_data[i];
-    }
-
-    if ((sum & 0xFF) == received_data[5])
-    {
-        // Checksum matches, print the values
-        std::cout << "Received X: " << original_x << std::endl;
-        std::cout << "Received Y: " << original_y << std::endl;
-    }
-    else
-    {
-        std::cout << "Checksum mismatch! Data may be corrupted." << std::endl;
-    }
 }
 
 void printTime()
