@@ -14,13 +14,13 @@ set(SPDLOG_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/thirdlib/spdlog/include)
 
 # 函数用于创建每个项目的可执行文件
 function(create_project_executable project_dir)
-    file(GLOB_RECURSE src_files ${project_dir}/*.h ${project_dir}/*.cpp )
+    file(GLOB_RECURSE src_files ${project_dir}/*.h ${project_dir}/*.cpp)
     get_filename_component(project_name ${project_dir} NAME)
     add_executable(${project_name} ${src_files})
-    
+
     # 添加spdlog的包含目录
     target_include_directories(${project_name} PRIVATE ${SPDLOG_INCLUDE_DIR})
-    
+
 endfunction()
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/thirdlib)

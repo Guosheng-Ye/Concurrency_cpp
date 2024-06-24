@@ -1,4 +1,4 @@
-/*** 
+/***
  * @Author: Ye Guosheng
  * @Date: 2024-05-07 14:47:06
  * @LastEditTime: 2024-06-05 09:12:44
@@ -44,7 +44,7 @@ public:
             std::unique_lock<std::mutex> lock(_m_mtx);
             // std::cout<<"after_std::unique_lock<std::mutex> lock(_m_mtx);"<<std::endl;
 
-            //条件变量存在虚假唤醒
+            // 条件变量存在虚假唤醒
             while (_m_q_qd.empty()) // 队列不为空,不进循环,直接处理数据,必须while
                 _m_cdv.wait(lock);  // 等待唤醒信号 -> wait:解锁+阻塞等待被唤醒+加锁
             //
