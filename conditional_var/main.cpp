@@ -5,7 +5,6 @@
  * @LastEditors: Ye Guosheng
  * @Description: 条件变量
  */
-#include "spdlog/spdlog.h"
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -13,33 +12,31 @@
 #include <memory>
 #include <mutex>
 #include <queue>
-#include <thread>
 #include <random>
+#include <thread>
 
-class AA
-{
-    std::mutex _m_mtx;
-    std::condition_variable _m_cdv;
+#include "spdlog/spdlog.h"
+
+class AA {
+    std::mutex                                       _m_mtx;
+    std::condition_variable                          _m_cdv;
     std::queue<std::string, std::deque<std::string>> _m_q_qd;
 
 public:
     void incache(int &&num) // produce data by num
     {
         std::lock_guard<std::mutex> lock(_m_mtx); // try lock
-        for (size_t i = 0; i < num; ++i)
-        {
-            static int id = 1;
+        for (size_t i = 0; i < num; ++i) {
+            static int  id      = 1;
             std::string message = std::to_string(id++) + " data";
             _m_q_qd.push(message);
         }
         _m_cdv.notify_all(); // 唤醒一个被当前条件变量阻塞的线程
     }
 
-    void outcache()
-    {
+    void outcache() {
         std::string mesasge;
-        while (true)
-        {
+        while (true) {
             // 互斥锁转换成unique_lock<mutex>
             // {
             // std::cout<<"before_std::unique_lock<std::mutex>
@@ -49,8 +46,10 @@ public:
             // lock(_m_mtx);"<<std::endl;
 
             // 条件变量存在虚假唤醒
-            while (_m_q_qd.empty()) // 队列不为空,不进循环,直接处理数据,必须while
-                _m_cdv.wait(lock);  // 等待唤醒信号 -> wait:解锁+阻塞等待被唤醒+加锁
+            while (
+                _m_q_qd.empty()) // 队列不为空,不进循环,直接处理数据,必须while
+                _m_cdv.wait(
+                    lock); // 等待唤醒信号 -> wait:解锁+阻塞等待被唤醒+加锁
 
             mesasge = _m_q_qd.front();
             _m_q_qd.pop();
@@ -58,13 +57,13 @@ public:
                       << ", message: " << mesasge << std::endl;
             lock.unlock();
             // } // 作用域内,拥有锁
-            std::this_thread::sleep_for(std::chrono::milliseconds(2)); // process data
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(2)); // process data
         }
     }
 };
 
-void test_AA()
-{
+void test_AA() {
     //    AA aa;
     //    std::thread o1(&AA::outcache, &aa);
     //    std::thread o2(&AA::outcache, &aa);
@@ -92,81 +91,156 @@ void test_AA()
     //    i4.join();
 }
 
-template <class T>
-class ThreadSafeQueue
-{
+// 交替打印
+int                     num = 1;
+std::mutex              num_mtx;
+std::condition_variable num_cond_A;
+std::condition_variable num_cond_B;
+
+void test_Add() {
+    std::thread t1([]() {
+        for (;;) {
+            std::unique_lock<std::mutex> lock(num_mtx);
+            num_cond_A.wait(lock, []() { return num == 1; });
+
+            num++;
+            spdlog::info("thread A print 1..");
+            num_cond_B.notify_one();
+        }
+    });
+
+    std::thread t2([]() {
+        for (;;) {
+            std::unique_lock<std::mutex> lock(num_mtx);
+            num_cond_B.wait(lock, []() { return num == 2; });
+
+            num--;
+            spdlog::info("Thread 2 print 2...");
+            num_cond_A.notify_one();
+        }
+    });
+
+    t1.join();
+    t2.join();
+}
+
+template <class T> class ThreadSafeQueue {
 public:
     ThreadSafeQueue() {}
 
-    ThreadSafeQueue(ThreadSafeQueue const &rhs)
-    {
-        std::lock_guard<std::mutex> lk(rhs._mtx);
+    /// @brief const 引用, 在未实现移动构造时可以使用拷贝构造，否则无法使用
+    /// @param rhs
+    ThreadSafeQueue(ThreadSafeQueue const &rhs) {
+
+        std::lock_guard<std::mutex> lock(rhs._mtx);
         _data_queue = rhs._data_queue;
     }
 
-    ThreadSafeQueue &operator=(const ThreadSafeQueue &) = delete;
+    void push(T new_value) {
 
-    void push(T new_value)
-    {
-        std::lock_guard<std::mutex> lk(_mtx);
+        std::lock_guard<std::mutex> lock(_mtx);
         _data_queue.push(new_value);
-        _data_cond.notify_one();
+        _data_cond.notify_one(); // 唤醒可能等等的其他线程
     }
 
-    bool try_pop(T &value)
-    {
-        std::lock_guard<std::mutex> lk(_mtx);
-        if (_data_queue.empty())
-            return false;
+    /// @brief 队列为空则等待，不为空则pop()
+    /// @param value
+    void wait_and_pop(T &value) {
+
+        // 注意是unique_lock 而不是lock_guard
+        std::unique_lock<std::mutex> un_lock(_mtx);
+        _data_cond.wait(un_lock, [this]() { return !_data_queue.empty(); });
+        value = _data_queue.front(); // 一次copy消耗
+        _data_queue.pop();
+    }
+
+    /// @brief
+    /// @return std::shared_ptr<T> res
+    std::shared_ptr<T> wait_and_pop() {
+
+        std::unique_lock<std::mutex> un_lock(_mtx);
+        _data_cond.wait(un_lock, [this]() { return !_data_queue.empty(); });
+        std::shared_ptr<T> sp_res(std::make_shared<T>(_data_queue.front()));
+        _data_queue.pop();
+        return sp_res;
+    }
+
+    bool try_pop(T &value) {
+
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (_data_queue.empty()) return false;
         value = _data_queue.front();
         _data_queue.pop();
         return true;
     }
 
-    std::shared_ptr<T> try_pop()
-    {
-        std::lock_guard<std::mutex> lk(_mtx);
-        if (_data_queue.empty())
-            return std::shared_ptr<T>();
+    std::shared_ptr<T> try_pop() {
+
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (_data_queue.empty()) return std::shared_ptr<T>();
         std::shared_ptr<T> res(std::make_shared<T>(_data_queue.front()));
         _data_queue.pop();
         return res;
     }
 
-    void wait_and_pop(T &value)
-    {
-        std::unique_lock<std::mutex> unlk(_mtx);
-        _data_cond.wait(unlk, [this]
-                        { return !_data_queue.empty(); });
-        value = _data_queue.front();
-        _data_queue.pop();
-    }
-
-    std::shared_ptr<T> wait_and_pop()
-    {
-        std::unique_lock<std::mutex> lk(_mtx);
-        _data_cond.wait(lk, [this]
-                        { return !_data_queue.empty(); });
-        std::shared_ptr<T> res(std::make_shared<T>(_data_queue.front()));
-        _data_queue.pop();
-        return res;
-    }
-
-    bool empty()
-    {
-        std::lock_guard<std::mutex> lk(_mtx);
+    bool empty() const {
+        std::lock_guard<std::mutex> lock(_mtx);
         return _data_queue.empty();
     }
 
 private:
-    std::mutex _mtx;
-    std::queue<T> _data_queue;
+    mutable std::mutex      _mtx;
+    std::queue<T>           _data_queue;
     std::condition_variable _data_cond;
 };
 
-int main()
-{
+void test_ThreadSafeQueue() {
+    ThreadSafeQueue<int> ts_queue;
+    std::mutex           mtx_print;
+
+    std::thread producer([&]() {
+        for (int i = 0;; ++i) {
+            ts_queue.push(i);
+            {
+                std::lock_guard<std::mutex> print_lock(mtx_print);
+                spdlog::info("producer push data: {}", i);
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
+    });
+
+    std::thread consumerA([&]() {
+        for (;;) {
+            auto data = ts_queue.wait_and_pop();
+            {
+                std::lock_guard<std::mutex> print_lock(mtx_print);
+                spdlog::warn("consumerA pop data: {}", *data);
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        }
+    });
+
+    std::thread consumerB([&]() {
+        for (;;) {
+            auto data = ts_queue.wait_and_pop();
+            {
+                std::lock_guard<std::mutex> print_lock(mtx_print);
+                spdlog::warn("consumerB pop data: {}", *data);
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
+    });
+
+    producer.join();
+    consumerA.join();
+    consumerB.join();
+}
+
+int main() {
     spdlog::info("test");
-    test_AA();
+    //   test_AA();
+    // test_Add();
+    test_ThreadSafeQueue();
+
     return 0;
 }
