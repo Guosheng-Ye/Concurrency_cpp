@@ -1,9 +1,10 @@
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <thread>
 #include <mutex>
 #include "spdlog/spdlog.h"
-
+#include <chrono>
 class PreSingle
 {
 public:
@@ -172,6 +173,7 @@ void test_singleAuto()
 class SingleAutoSafe;
 class SingleDeletor
 {
+public:
     void operator()(SingleAutoSafe *sf)
     {
         spdlog::info("delete operator()");
@@ -197,6 +199,7 @@ public:
         }
 
         _sp_single_safe = std::shared_ptr<SingleAutoSafe>(new SingleAutoSafe, SingleDeletor());
+        //!!! new SingleAutoSafe 非原子操作
         _mutex_.unlock();
         return _sp_single_safe;
     }
@@ -228,12 +231,99 @@ void test_singleAutoSafe()
     // delete sp1.get();
 }
 
+class SingleCallOnce
+{
+public:
+    static std::shared_ptr<SingleCallOnce> getInstance()
+    {
+        static std::once_flag once_flag;
+        std::call_once(once_flag, [&]()
+                       { _instance = std::shared_ptr<SingleCallOnce>(new SingleCallOnce); });
+        return _instance;
+    }
+
+    void printAddress()
+    {
+        std::cout << _instance.get() << std::endl;
+    }
+    ~SingleCallOnce()
+    {
+        spdlog::info("single destruct");
+    }
+
+private:
+    SingleCallOnce() = default;
+    SingleCallOnce(const SingleCallOnce &) = delete;
+    SingleCallOnce &operator=(const SingleCallOnce &st) = delete;
+    static std::shared_ptr<SingleCallOnce> _instance;
+};
+
+std::shared_ptr<SingleCallOnce> SingleCallOnce::_instance = nullptr;
+
+void testCallOnce()
+{
+    std::thread t1([]()
+                   { std::this_thread::sleep_for(std::chrono::seconds(5));
+                                                 SingleCallOnce::getInstance()->printAddress(); });
+    std::thread t2([]()
+                   {std::this_thread::sleep_for(std::chrono::seconds(1));SingleCallOnce::getInstance()->printAddress(); });
+
+    t1.join();
+    t2.join();
+}
+
+// 单例模板类
+template <typename T>
+class Singleton
+{
+public:
+    static std::shared_ptr<T> getInstance()
+    {
+        static std::once_flag once_flag;
+        std::call_once(once_flag, [&]()
+                       { _sp_instance = std::shared_ptr<T>(new T); });
+        return _sp_instance;
+    }
+
+    void printAddress()
+    {
+        std::cout << _sp_instance.get() << std::endl;
+    }
+    ~Singleton()
+    {
+        spdlog::info("single destruct");
+    }
+
+protected:
+    Singleton() = default;
+    Singleton(const Singleton<T> &) = delete;
+    Singleton &operator=(const Singleton<T> &st) = delete;
+
+    static std::shared_ptr<T> _sp_instance;
+};
+
+template <typename T>
+std::shared_ptr<T> Singleton<T>::_sp_instance = nullptr;
+
+// 想使用单例类，可以继承上面的模板，我在网络编程中逻辑单例类用的就是这种方式
+class LogicSystem : public Singleton<LogicSystem>
+{
+    friend class Singleton<LogicSystem>;
+
+public:
+    ~LogicSystem() {}
+
+private:
+    LogicSystem() {}
+};
+
 int main()
 {
     // test_presingle();
     // test_singleHungry();
     // test_singlelazy();
     // test_singleAuto();
-    test_singleAutoSafe();
+    // test_singleAutoSafe();
+    testCallOnce();
     return 0;
 }
