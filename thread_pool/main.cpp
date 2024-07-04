@@ -211,7 +211,7 @@ private:
             task();
         }
     }
- 
+
 private:
     std::vector<std::thread> _v_thread;
     std::queue<TskType>      _q_tasks;
