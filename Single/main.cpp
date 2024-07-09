@@ -236,7 +236,8 @@ void testCallOnce() {
 }
 
 // 单例模板类
-template <typename T> class Singleton {
+template <typename T>
+class Singleton {
 public:
     static std::shared_ptr<T> getInstance() {
         static std::once_flag once_flag;
@@ -256,9 +257,10 @@ protected:
     static std::shared_ptr<T> _sp_instance;
 };
 
-template <typename T> std::shared_ptr<T> Singleton<T>::_sp_instance = nullptr;
+template <typename T>
+std::shared_ptr<T> Singleton<T>::_sp_instance = nullptr;
 
-// 想使用单例类，可以继承上面的模板，我在网络编程中逻辑单例类用的就是这种方式
+// 想使用单例类，可以继承上面的模板//
 class LogicSystem : public Singleton<LogicSystem> {
     friend class Singleton<LogicSystem>;
 
@@ -269,12 +271,77 @@ private:
     LogicSystem() {}
 };
 
+//
+class SingleMemoryModel {
+
+public:
+    ~SingleMemoryModel() {
+        std::cout << "single auto delete success" << std::endl;
+    }
+    static std::shared_ptr<SingleMemoryModel> get_instance() {
+        // 已经实例化，直接返回
+        if (_b_ato_init.load(std::memory_order_acquire)) {
+            return _sptr_single;
+        }
+
+        _mtx.lock();
+        // 在锁后，用releaxed节约资源
+        if (_b_ato_init.load(std::memory_order_relaxed)) {
+            _mtx.unlock();
+            return _sptr_single;
+        }
+
+        _sptr_single =
+            std::shared_ptr<SingleMemoryModel>(new SingleMemoryModel);
+        _b_ato_init.store(true, std::memory_order_release);
+        _mtx.unlock();
+        return _sptr_single;
+    }
+
+private:
+    SingleMemoryModel() {}
+    SingleMemoryModel(const SingleMemoryModel &)            = delete;
+    SingleMemoryModel &operator=(const SingleMemoryModel &) = delete;
+
+private:
+    static std::shared_ptr<SingleMemoryModel> _sptr_single;
+    static std::mutex                         _mtx;
+    static std::atomic<bool>                  _b_ato_init;
+};
+
+std::shared_ptr<SingleMemoryModel> SingleMemoryModel::_sptr_single = nullptr;
+std::mutex                         SingleMemoryModel::_mtx;
+std::atomic<bool> SingleMemoryModel::_b_ato_init = ATOMIC_FLAG_INIT;
+
+void test_single_memory() {
+    std::cout << "test_single_memory" << std::endl;
+    std::thread t1([]() {
+        std::cout << "thread t1 singleton address is "
+                  << SingleMemoryModel::get_instance() << std::endl;
+    });
+
+    std::thread t2([]() {
+        std::cout << "thread t2 singleton address is "
+                  << SingleMemoryModel::get_instance() << std::endl;
+    });
+
+    std::thread t3([]() {
+        std::cout << "thread t3 singleton address is "
+                  << SingleMemoryModel::get_instance() << std::endl;
+    });
+    t1.join();
+    t2.join();
+    t3.join();
+}
+
 int main() {
     // test_presingle();
     // test_singleHungry();
     // test_singlelazy();
     // test_singleAuto();
     // test_singleAutoSafe();
-    testCallOnce();
+    // testCallOnce();
+    test_single_memory();
+
     return 0;
 }
