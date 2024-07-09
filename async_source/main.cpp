@@ -146,7 +146,7 @@ void test_parallel_1() {
                 }
             },
             i);
-    }
+    } 
     std::cout << "End test parallel 1..." << std::endl;
 }
 
