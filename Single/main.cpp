@@ -1,6 +1,5 @@
 #include "spdlog/spdlog.h"
 #include <chrono>
-#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <mutex>

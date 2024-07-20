@@ -12,7 +12,7 @@
                 "_UNICODE"
             ],
             "cStandard": "c17",
-            "compilerPath": "D:\\MinGW\\mingw64\\bin\\g++",
+            "compilerPath": "D:\\MinGW13_2\\mingw64\\bin\\g++",
             "cppStandard": "c++17",
             "intelliSenseMode": "windows-gcc-x64",
             "configurationProvider": "ms-vscode.cmake-tools"
