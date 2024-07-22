@@ -45,8 +45,8 @@ public:
     void push(T new_value) {
         // construct new node
         std::shared_ptr<T> new_data(std::make_shared<T>(std::move(new_value)));
-        std::unique_ptr<node> p(new node);
-        node *const           new_tail = p.get();
+        std::unique_ptr<node> p(new node);        // 构建虚位结点
+        node *const           new_tail = p.get(); // 更新tail
 
         std::lock_guard<std::mutex> tail_lock(_tailMtx);
         _pTail->data = new_data;
@@ -85,7 +85,6 @@ private:
     }
 
     std::unique_ptr<node> wait_pop_head() {
-    std:
         std::unique_lock<std::mutex> head_lock(wait_for_data());
         return pop_head();
     }
