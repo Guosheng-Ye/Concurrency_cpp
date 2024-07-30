@@ -10,7 +10,15 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
 # 设置thirdlib中的spdlog库路径
-set(SPDLOG_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/thirdlib/spdlog/include)
+set(SPDLOG_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/thirdlib/spdlog/)
+
+# 设置GTest库路径
+set(GTEST_LIB ${CMAKE_SOURCE_DIR}/gtestlib/lib)
+set(GTEST_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdlib/include)
+
+# 包含GTest头文件
+include_directories(${GTEST_INCLUDE_DIR})
+link_directories(${CMAKE_SOURCE_DIR}/gtestlib/lib)
 
 # 函数用于创建每个项目的可执行文件
 function(create_project_executable project_dir)
@@ -18,10 +26,12 @@ function(create_project_executable project_dir)
     get_filename_component(project_name ${project_dir} NAME)
     add_executable(${project_name} ${src_files})
 
-    # 添加spdlog的包含目录
+    # 添加spdlog,GTest
     target_include_directories(${project_name} PRIVATE ${SPDLOG_INCLUDE_DIR})
+    target_link_libraries(${project_name} PRIVATE ${GTEST_LIB}/libgtest.a ${GTEST_LIB}/libgtest_main.a)
 
 endfunction()
+
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/thirdlib)
 
