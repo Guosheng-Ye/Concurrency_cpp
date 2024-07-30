@@ -152,11 +152,11 @@ public:
     // 4. update head
     /// @param data_
     void push(T const &data_) {
-        CountNode *newNodePtr          = new CountNode(data_);
-        newNodePtr->next.ptr           = _atmHeadPtr.load();
-        newNodePtr->next.externalCount = 1;
+        CountNode *newNode          = new CountNode(data_);
+        newNode->next.ptr           = _atmHeadPtr.load();
+        newNode->next.externalCount = 1;
         while (!_atmHeadPtr.compare_exchange_strong(
-            newNodePtr->next.ptr, newNodePtr, std::memory_order_release,
+            newNode->next.ptr, newNode, std::memory_order_release,
             std::memory_order_relaxed))
             ;
     }
