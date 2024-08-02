@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.28.0)
 project(cpp_threads VERSION 0.1.0 LANGUAGES C CXX)
 
 # 设置C++标准
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 
 # 设置CPack参数
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
