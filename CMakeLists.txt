@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.28.0)
 project(cpp_threads VERSION 0.1.0 LANGUAGES C CXX)
 
 # 设置C++标准
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 # 设置CPack参数
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
@@ -28,7 +28,7 @@ function(create_project_executable project_dir)
 
     # 添加spdlog,GTest
     target_include_directories(${project_name} PRIVATE ${SPDLOG_INCLUDE_DIR})
-    target_link_libraries(${project_name} PRIVATE ${GTEST_LIB}/libgtest.a ${GTEST_LIB}/libgtest_main.a)
+    target_link_libraries(${project_name} PRIVATE ${OpenCV_LIBS}  ${GTEST_LIB}/libgtest.a ${GTEST_LIB}/libgtest_main.a)
 
 endfunction()
 
