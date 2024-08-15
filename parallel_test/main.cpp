@@ -7,11 +7,13 @@
  */
 
 #include "spdlog/spdlog.h"
+#include "gtest/gtest.h"
 #include <algorithm>
 #include <future>
 #include <iostream>
 #include <list>
 #include <queue>
+#include <random>
 #include <thread>
 
 /// @brief sequential func
@@ -48,7 +50,8 @@ std::list<T> sequential_quick_sort(std::list<T> input_list) {
     return result;
 }
 
-template <typename T> std::list<T> parallel_quick_sort(std::list<T> input) {
+template <typename T>
+std::list<T> parallel_quick_sort(std::list<T> input) {
     if (input.empty()) return input;
     std::list<T> result;
 
@@ -169,7 +172,8 @@ private:
     std::vector<std::thread> _pool;
 };
 
-template <typename T> std::list<T> thread_pool_quick_sort(std::list<T> input) {
+template <typename T>
+std::list<T> thread_pool_quick_sort(std::list<T> input) {
     if (input.empty()) return input;
     std::list<T> result;
     result.splice(result.begin(), input, input.begin());
@@ -189,42 +193,64 @@ template <typename T> std::list<T> thread_pool_quick_sort(std::list<T> input) {
     return result;
 }
 
+std::list<int> numlists = {};
+
+void set_random() {
+    std::uniform_int_distribution<int> u(-1000, 1000);
+    std::default_random_engine         e;
+    for (size_t i = 0; i < 100000; ++i) {
+        numlists.push_back(u(e));
+    }
+}
+
 void test_sequential_sort() {
-    std::list<int> numlists    = {6, 1, 1, 0, 7, 19, 5, 2, 9, -1};
-    auto           sort_result = sequential_quick_sort(numlists);
-    std::cout << "sorted result is ";
-    // for (auto iter = sort_result.begin(); iter != sort_result.end(); iter++)
-    // {
-    //     std::cout << " " << (*iter);
-    // }
-    for (auto &e : sort_result)
-        std::cout << e << " ";
+    // std::list<int> numlists    = {6, 1, 1, 0, 7, 19, 5, 2, 9, -1};
+    auto sort_result = sequential_quick_sort(numlists);
+    // std::cout << "sorted result is ";
+    // // for (auto iter = sort_result.begin(); iter != sort_result.end();
+    // iter++)
+    // // {
+    // //     std::cout << " " << (*iter);
+    // // }
+    // for (auto &e : sort_result)
+    //     std::cout << e << " ";
     std::cout << std::endl;
 }
 
 void test_parallel_quick() {
-    std::list<int> numlists    = {10, 6, 1, 0, 7, 5, 2, 9, -1};
-    auto           sort_result = parallel_quick_sort(numlists);
-    std::cout << "sorted result is ";
+    // std::list<int> numlists    = {10, 6, 1, 0, 7, 5, 2, 9, -1};
+    auto sort_result = parallel_quick_sort(numlists);
+    // std::cout << "sorted result is ";
 
-    for (auto &e : sort_result)
-        std::cout << e << " ";
+    // for (auto &e : sort_result)
+    //     std::cout << e << " ";
     std::cout << std::endl;
 }
 
 void test_thread_pool_sort() {
-    std::list<int> numlists    = {6, 1, 0, 7, 5, 2, 9, -1, 10, -99, 21};
-    auto           sort_result = thread_pool_quick_sort(numlists);
-    std::cout << "sorted result is ";
-    for (auto iter = sort_result.begin(); iter != sort_result.end(); iter++) {
-        std::cout << " " << (*iter);
-    }
+    // std::list<int> numlists    = {6, 1, 0, 7, 5, 2, 9, -1, 10, -99, 21};
+    auto sort_result = thread_pool_quick_sort(numlists);
+    // std::cout << "sorted result is ";
+    // for (auto iter = sort_result.begin(); iter != sort_result.end(); iter++)
+    // {
+    //     std::cout << " " << (*iter);
+    // }
     std::cout << std::endl;
 }
 
+TEST(test_sequential_sort, sequential_sort) { test_sequential_sort(); }
+
+TEST(test_parallel_quick, parallel_sort) { test_parallel_quick(); }
+
+TEST(test_thread_pool_sort, thread_pool_sort) { test_thread_pool_sort(); }
+
 int main() {
-    // test_sequential_sort();
-    // test_parallel_quick();
-    test_thread_pool_sort();
-    return 0;
+
+    set_random();
+
+    testing::InitGoogleTest();
+    // 默认启用彩色输出和显示时间
+    ::testing::GTEST_FLAG(color)      = "yes";
+    ::testing::GTEST_FLAG(print_time) = true;
+    return RUN_ALL_TESTS();
 }
