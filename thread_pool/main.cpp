@@ -1,4 +1,3 @@
-
 /***
  * @Author: Ye Guosheng
  * @Date: 2024-06-25 15:43:30
@@ -6,7 +5,6 @@
  * @LastEditors: Ye Guosheng
  * @Description: Thread Pool
  */
-#include "spdlog/spdlog.h"
 #include <atomic>
 #include <condition_variable>
 #include <functional>
@@ -38,8 +36,8 @@ public:
     /// @param ...args 可变参数
     /// @return std::future<decltype(f(args...))
     template <class F, class... Args>
-    auto commit(F &&f, Args &&...args) -> std::future<decltype(f(args...))> {
-        using ReturnType = decltype(f(args...));
+    auto commit(F &&f, Args &&...args) -> std::future<decltype(std::forward<F>(f)(std::forward<Args>(args)...))> {
+        using ReturnType = decltype(std::forward<F>(f)(std::forward<Args>(args)...));
 
         if (_ato_b_stop.load()) {
             return std::future<ReturnType>{};
@@ -81,10 +79,8 @@ private:
                     Task task;
                     {
                         std::unique_lock<std::mutex> lock(_cond_mtx);
-                        this->_cond_var.wait(lock, [this] {
-                            return this->_ato_b_stop.load() ||
-                                   !this->_tasks.empty();
-                        });
+                        this->_cond_var.wait(lock,
+                                             [this] { return this->_ato_b_stop.load() || !this->_tasks.empty(); });
                         if (this->_tasks.empty()) return;
                         task = std::move(this->_tasks.front());
                         this->_tasks.pop();
@@ -152,8 +148,7 @@ void test_no_error() {
 class ThreadPool_ {
 public:
     using TskType = std::function<void()>;
-    explicit ThreadPool_(
-        unsigned num_threads = std::thread::hardware_concurrency())
+    explicit ThreadPool_(unsigned num_threads = std::thread::hardware_concurrency())
         : _ato_bool_stop(false) {
 
         // limit thrad_num
@@ -178,8 +173,7 @@ public:
     template <typename T>
     auto addTask(T func) -> std::future<decltype(func())> {
         using ReturnType = decltype(func());
-        auto task =
-            std::make_shared<std::packaged_task<ReturnType()>>(std::move(func));
+        auto task        = std::make_shared<std::packaged_task<ReturnType()>>(std::move(func));
         {
             std::lock_guard<std::mutex> lock(_mtx);
             _q_tasks.emplace([task]() { (*task)(); });
@@ -196,14 +190,10 @@ private:
             TskType task;
             {
                 std::unique_lock<std::mutex> lock(_mtx);
-                _cond_v.wait(lock, [this]() {
-                    return (_ato_bool_stop.load(std::memory_order_acquire) ||
-                            !_q_tasks.empty());
-                });
+                _cond_v.wait(
+                    lock, [this]() { return (_ato_bool_stop.load(std::memory_order_acquire) || !_q_tasks.empty()); });
 
-                if (_ato_bool_stop.load(std::memory_order_acquire) &&
-                    _q_tasks.empty())
-                    break;
+                if (_ato_bool_stop.load(std::memory_order_acquire) && _q_tasks.empty()) break;
 
                 task = std::move(_q_tasks.front());
                 _q_tasks.pop();
@@ -237,7 +227,7 @@ void test_threadpool_() {
 }
 
 int main() {
-    // test_threadpool();
+    // test_no_error();
     // test();
     test_threadpool_();
     return 0;
